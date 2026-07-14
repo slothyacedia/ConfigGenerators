@@ -144,6 +144,50 @@
         flex: 1;
       }
 
+      .gh-block {
+        margin-bottom: 14px;
+      }
+      .gh-divider {
+        display: flex;
+        align-items: center;
+        text-align: center;
+        color: var(--muted);
+        font-size: 10.5px;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        margin: 4px 0 10px;
+      }
+      .gh-divider::before,
+      .gh-divider::after {
+        content: "";
+        flex: 1;
+        height: 1px;
+        background: var(--border);
+      }
+      .gh-divider span {
+        padding: 0 8px;
+        white-space: nowrap;
+      }
+      .gh-row {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 8px;
+      }
+      .gh-row input[type="text"] {
+        flex: 1;
+        min-width: 0;
+        background: var(--panel);
+        border: 1px solid var(--border);
+        color: var(--text);
+        border-radius: 8px;
+        padding: 9px 10px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 12.5px;
+      }
+      .gh-row button {
+        flex-shrink: 0;
+      }
+
       #progress-wrap {
         display: none;
         margin-bottom: 14px;
@@ -622,6 +666,19 @@
           <button id="btn-browse-files" class="ghost">Browse files</button>
           <button id="btn-browse-folder" class="ghost">Browse folder</button>
         </div>
+
+        <div class="gh-block">
+          <div class="gh-divider"><span>or load from a GitHub repo</span></div>
+          <div class="gh-row">
+            <input type="text" id="gh-input" placeholder="owner/repo or a GitHub URL (e.g. tandpfun/skill-icons)" />
+            <button id="btn-gh-fetch" class="ghost">Fetch</button>
+          </div>
+          <div class="gh-row">
+            <input type="text" id="gh-path" placeholder="optional subfolder, e.g. icons (leave blank to scan whole repo)" />
+          </div>
+          <div class="hint" id="gh-status"></div>
+        </div>
+
         <div id="progress-wrap">
           <div id="progress-bar-track"><div id="progress-bar-fill"></div></div>
           <div id="progress-label"></div>
@@ -642,7 +699,10 @@
         <div id="palette-viewport" class="empty">
           <div id="palette-sizer"></div>
         </div>
-        <div class="hint" id="palette-hint">Tap a tile to toggle it, or drag in it into the grid preview.</div>
+        <div class="hint" id="palette-hint">
+          Tap a tile to toggle it. On a mouse, drag a rectangle across tiles to multi-select. Press and hold a tile, then drag, to drop it straight onto the
+          grid.
+        </div>
       </div>
 
       <div class="col">
@@ -728,6 +788,10 @@
           folderInput: document.getElementById("folder-input"),
           btnBrowseFiles: document.getElementById("btn-browse-files"),
           btnBrowseFolder: document.getElementById("btn-browse-folder"),
+          ghInput: document.getElementById("gh-input"),
+          ghPath: document.getElementById("gh-path"),
+          btnGhFetch: document.getElementById("btn-gh-fetch"),
+          ghStatus: document.getElementById("gh-status"),
           progressWrap: document.getElementById("progress-wrap"),
           progressFill: document.getElementById("progress-bar-fill"),
           progressLabel: document.getElementById("progress-label"),
@@ -824,6 +888,126 @@
           recomputeFilter()
           renderPaletteVirtual()
         }
+
+        // ---------- load icons straight from a public GitHub repo ----------
+        function parseGithubInput(raw) {
+          const str = raw.trim().replace(/\/+$/, "")
+          if (!str) return null
+
+          // full URL: github.com/owner/repo[/tree/ref/path...]
+          let m = str.match(/^(?:https?:\/\/)?(?:www\.)?github\.com\/([^\/\s]+)\/([^\/\s]+?)(?:\.git)?(?:\/(?:tree|blob)\/([^\/\s]+)((?:\/[^\/\s]+)*))?$/i)
+          if (m) {
+            return { owner: m[1], repo: m[2], ref: m[3] || null, path: (m[4] || "").replace(/^\//, "") }
+          }
+          // shorthand: owner/repo or owner/repo/sub/path
+          const parts = str.split("/").filter(Boolean)
+          if (parts.length >= 2) {
+            return { owner: parts[0], repo: parts[1], ref: null, path: parts.slice(2).join("/") }
+          }
+          return null
+        }
+
+        async function ghJson(url) {
+          const res = await fetch(url, { headers: { Accept: "application/vnd.github+json" } })
+          if (!res.ok) {
+            if (res.status === 403) throw new Error("GitHub API rate limit hit — wait a bit and try again.")
+            if (res.status === 404) throw new Error("Repo, branch, or path not found — double-check it's public and spelled right.")
+            throw new Error(`GitHub API error (${res.status})`)
+          }
+          return res.json()
+        }
+
+        async function asyncPool(limit, items, worker) {
+          const results = new Array(items.length)
+          let next = 0
+          async function run() {
+            while (next < items.length) {
+              const idx = next++
+              results[idx] = await worker(items[idx], idx)
+            }
+          }
+          const runners = Array.from({ length: Math.min(limit, items.length) }, run)
+          await Promise.all(runners)
+          return results
+        }
+
+        function setGhStatus(msg, isError) {
+          el.ghStatus.textContent = msg
+          el.ghStatus.style.color = isError ? "var(--danger)" : "var(--muted)"
+        }
+
+        ;[el.ghInput, el.ghPath].forEach((input) => {
+          input.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") el.btnGhFetch.click()
+          })
+        })
+
+        el.btnGhFetch.addEventListener("click", async () => {
+          const parsed = parseGithubInput(el.ghInput.value)
+          if (!parsed) {
+            setGhStatus('Enter a repo like "owner/repo" or a full github.com URL.', true)
+            return
+          }
+          const pathFilter = el.ghPath.value.trim().replace(/^\/|\/$/g, "")
+          el.btnGhFetch.disabled = true
+          const original = el.btnGhFetch.textContent
+          el.btnGhFetch.textContent = "…"
+
+          try {
+            setGhStatus("Looking up repo…")
+            let ref = parsed.ref
+            if (!ref) {
+              const info = await ghJson(`https://api.github.com/repos/${parsed.owner}/${parsed.repo}`)
+              ref = info.default_branch
+            }
+
+            setGhStatus("Reading file list…")
+            const treeData = await ghJson(`https://api.github.com/repos/${parsed.owner}/${parsed.repo}/git/trees/${encodeURIComponent(ref)}?recursive=1`)
+            const effectivePathPrefix = pathFilter || parsed.path || ""
+            let entries = (treeData.tree || []).filter((t) => t.type === "blob" && /\.svg$/i.test(t.path))
+            if (effectivePathPrefix) {
+              entries = entries.filter((t) => t.path === effectivePathPrefix || t.path.startsWith(effectivePathPrefix.replace(/\/$/, "") + "/"))
+            }
+
+            if (!entries.length) {
+              setGhStatus("No .svg files found there. Try clearing the subfolder box or checking the path.", true)
+              return
+            }
+            if (treeData.truncated) {
+              setGhStatus(`Warning: this repo is large — GitHub only returned a partial file list. Found ${entries.length} svgs in that slice.`)
+            }
+
+            showProgress(0, entries.length)
+            let done = 0
+            await asyncPool(8, entries, async (entry) => {
+              try {
+                const rawUrl = `https://raw.githubusercontent.com/${parsed.owner}/${parsed.repo}/${ref}/${entry.path}`
+                const res = await fetch(rawUrl)
+                if (res.ok) {
+                  const text = await res.text()
+                  addIconFile(entry.path.split("/").pop(), text)
+                }
+              } catch (err) {
+                /* skip individual failures, keep going */
+              }
+              done++
+              showProgress(done, entries.length)
+            })
+            hideProgress()
+            invalidatePaletteRange()
+            recomputeFilter()
+            renderPaletteVirtual()
+            setGhStatus(`Loaded ${entries.length} icon${entries.length === 1 ? "" : "s"} from ${parsed.owner}/${parsed.repo}.`)
+          } catch (err) {
+            hideProgress()
+            const msg = err && err.message ? err.message : String(err)
+            const looksLikeNetworkBlock = /failed to fetch|networkerror|load failed/i.test(msg)
+            setGhStatus(looksLikeNetworkBlock ? "Could not reach GitHub." : msg, true)
+          } finally {
+            el.btnGhFetch.disabled = false
+            el.btnGhFetch.textContent = original
+          }
+        })
 
         // recursive folder drop support (Chrome/Edge/Firefox via webkitGetAsEntry)
         async function collectFilesFromDataTransfer(dt) {
