@@ -691,7 +691,7 @@
       <label class="${!g.webdav.disabled ? "on" : ""}">WebDAV</label>
       <span class="proto-note">Always available over http(s) unless disabled below</span>
       <label class="inline-check ${g.webdav.disabled ? "on" : ""}">
-        <input type="checkbox" ${g.webdav.disabled ? "checked" : ""} onchange="toggleWebdav('disabled',this.checked)"> disable
+        <input type="checkbox" ${g.webdav.disabled ? "checked" : ""} onchange="toggleWebdav('disabled',this.checked)"> Disable
       </label>
       <label class="inline-check ${g.webdav.authRequired ? "on" : ""}">
         <input type="checkbox" ${g.webdav.authRequired ? "checked" : ""} onchange="toggleWebdav('authRequired',this.checked)"> Require login (--dav-auth)
