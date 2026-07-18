@@ -11,7 +11,7 @@
    inkscape:export-filename="aceserv256.png"
    inkscape:export-xdpi="48"
    inkscape:export-ydpi="48"
-   sodipodi:docname="iconRig.svg"
+   sodipodi:docname="IconRig.svg"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns="http://www.w3.org/2000/svg"
@@ -37,6 +37,18 @@
      inkscape:current-layer="layer1" />
   <defs
      id="defs1">
+    <rect
+       x="54.227715"
+       y="139.18447"
+       width="494.376"
+       height="403.99648"
+       id="rect10" />
+    <rect
+       x="87.668139"
+       y="131.05031"
+       width="444.66726"
+       height="240.40953"
+       id="rect9" />
     <rect
        x="15.364519"
        y="92.187115"
@@ -104,10 +116,13 @@
        id="text1"
        style="font-size:96.3456px;line-height:0.75;font-family:'Corptic DEMO';-inkscape-font-specification:'Corptic DEMO, Normal';text-align:center;letter-spacing:0px;word-spacing:0px;text-anchor:middle;white-space:pre;display:none;fill:#ffffff;stroke-width:0"
        aria-label="conforge" />
-    <path
-       d="M 124.02326,407.1628 H 31 V 81.581385 h 93.02326 z M 177.74419,174.60464 124.02326,81.581385 h 220.93022 q 104.65117,0 104.65117,104.651165 0,67.44186 -43.48838,91.39535 L 481,407.1628 H 373.7907 L 306.58139,290.88371 h -66.27908 v 93.02328 l -93.02325,46.51162 V 197.86045 h 197.67442 q 11.62791,0 11.62791,-11.6279 0,-11.62791 -11.62791,-11.62791 z"
+    <text
+       xml:space="preserve"
        id="text2"
-       style="font-size:192px;line-height:0.6;font-family:'Fast Hand';-inkscape-font-specification:'Fast Hand, Normal';text-align:center;letter-spacing:0px;word-spacing:0px;text-anchor:middle;white-space:pre;fill:#ffffff;stroke-width:0"
-       aria-label="IR" />
+       style="font-size:333.333px;line-height:0.6;font-family:'Fast Hand';-inkscape-font-specification:'Fast Hand, Normal';text-align:center;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;direction:ltr;white-space:pre;shape-inside:url(#rect10);display:inline;fill:#ffffff;stroke-width:0"
+       transform="translate(-48.264319,30.058336)"><tspan
+         x="146.79377"
+         y="331.73583"
+         id="tspan2">ir</tspan></text>
   </g>
 </svg>

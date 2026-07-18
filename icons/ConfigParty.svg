@@ -11,7 +11,7 @@
    inkscape:export-filename="aceserv256.png"
    inkscape:export-xdpi="48"
    inkscape:export-ydpi="48"
-   sodipodi:docname="configParty.svg"
+   sodipodi:docname="ConfigParty.svg"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns="http://www.w3.org/2000/svg"
@@ -37,6 +37,12 @@
      inkscape:current-layer="layer1" />
   <defs
      id="defs1">
+    <rect
+       x="54.227715"
+       y="139.18447"
+       width="494.376"
+       height="403.99648"
+       id="rect10" />
     <rect
        x="87.668139"
        y="131.05031"
@@ -110,10 +116,13 @@
        id="text1"
        style="font-size:96.3456px;line-height:0.75;font-family:'Corptic DEMO';-inkscape-font-specification:'Corptic DEMO, Normal';text-align:center;letter-spacing:0px;word-spacing:0px;text-anchor:middle;white-space:pre;display:none;fill:#ffffff;stroke-width:0"
        aria-label="conforge" />
-    <path
-       d="M 158.63371,119.2496 H 322.7342 l -42.11913,72.93354 H 158.63371 q -54.70016,0 -54.70016,54.70016 0,54.70016 54.70016,54.70016 h 58.71151 l -42.11913,72.93355 H 158.63371 Q 31,374.51702 31,246.8833 31,119.2496 158.63371,119.2496 Z M 267.8517,192.18315 225.73258,119.2496 h 173.21718 q 82.05024,0 82.05024,82.05024 0,82.05025 -82.05024,82.05025 h -82.05025 v 72.93354 L 243.96596,392.7504 V 210.41653 h 154.9838 q 9.11669,0 9.11669,-9.11669 0,-9.11669 -9.11669,-9.11669 z"
+    <text
+       xml:space="preserve"
        id="text2"
-       style="font-size:192px;line-height:0.6;font-family:'Fast Hand';-inkscape-font-specification:'Fast Hand, Normal';text-align:center;letter-spacing:0px;word-spacing:0px;text-anchor:middle;white-space:pre;fill:#ffffff;stroke-width:0"
-       aria-label="cp" />
+       style="font-size:333.333px;line-height:0.6;font-family:'Fast Hand';-inkscape-font-specification:'Fast Hand, Normal';text-align:center;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;direction:ltr;white-space:pre;shape-inside:url(#rect10);display:inline;fill:#ffffff;stroke-width:0"
+       transform="translate(-37.277999,30.058336)"><tspan
+         x="92.431845"
+         y="331.73583"
+         id="tspan1">cp</tspan></text>
   </g>
 </svg>
