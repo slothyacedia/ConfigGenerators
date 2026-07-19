@@ -223,6 +223,16 @@
         padding: 12px 14px;
         margin-bottom: 10px;
         background: var(--panel-2);
+        transition:
+          border-color 0.1s,
+          background 0.1s;
+      }
+      .entity.dragging {
+        opacity: 0.4;
+      }
+      .entity.drag-over {
+        border-color: var(--teal);
+        background: rgba(79, 209, 197, 0.08);
       }
       .entity-head {
         display: flex;
@@ -234,8 +244,26 @@
       .entity-head .name-wrap {
         display: flex;
         align-items: center;
-        gap: 2px;
+        gap: 4px;
         flex: 1;
+        min-width: 0;
+      }
+      .entity-actions {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        flex-shrink: 0;
+      }
+      .drag-handle {
+        cursor: grab;
+        color: var(--muted);
+        font-size: 15px;
+        line-height: 1;
+        padding: 4px 6px;
+        user-select: none;
+      }
+      .drag-handle:active {
+        cursor: grabbing;
       }
       .rename-input {
         font-family: var(--mono);
@@ -793,6 +821,67 @@
         p.value = ""
         renderAll()
       }
+      function moveItem(arr, id, dir) {
+        const idx = arr.findIndex((x) => x.id === id)
+        if (idx < 0) return arr
+        const newIdx = idx + dir
+        if (newIdx < 0 || newIdx >= arr.length) return arr
+        const copy = arr.slice()
+        const [item] = copy.splice(idx, 1)
+        copy.splice(newIdx, 0, item)
+        return copy
+      }
+      function reorderTo(arr, draggedId, targetId) {
+        const fromIdx = arr.findIndex((x) => x.id === draggedId)
+        if (fromIdx < 0 || draggedId === targetId) return arr
+        const copy = arr.slice()
+        const [item] = copy.splice(fromIdx, 1)
+        const toIdx = copy.findIndex((x) => x.id === targetId)
+        copy.splice(toIdx < 0 ? copy.length : toIdx, 0, item)
+        return copy
+      }
+      let dragInfo = null
+      function onDragStart(e, listType, id) {
+        const tag = (e.target.tagName || "").toLowerCase()
+        if (["input", "textarea", "select", "button"].includes(tag)) {
+          e.preventDefault()
+          return
+        }
+        dragInfo = { listType, id }
+        e.dataTransfer.effectAllowed = "move"
+        try {
+          e.dataTransfer.setData("text/plain", String(id))
+        } catch (err) {}
+        e.currentTarget.classList.add("dragging")
+      }
+      function onDragOver(e, listType) {
+        if (!dragInfo || dragInfo.listType !== listType) return
+        e.preventDefault()
+        e.dataTransfer.dropEffect = "move"
+        e.currentTarget.classList.add("drag-over")
+      }
+      function onDragLeave(e) {
+        e.currentTarget.classList.remove("drag-over")
+      }
+      function onDrop(e, listType, targetId) {
+        e.preventDefault()
+        e.currentTarget.classList.remove("drag-over")
+        if (!dragInfo || dragInfo.listType !== listType) return
+        if (listType === "user") state.users = reorderTo(state.users, dragInfo.id, targetId)
+        else if (listType === "volume") state.volumes = reorderTo(state.volumes, dragInfo.id, targetId)
+        else if (listType === "group") state.groups = reorderTo(state.groups, dragInfo.id, targetId)
+        dragInfo = null
+        renderAll()
+      }
+      function onDragEnd(e) {
+        e.currentTarget.classList.remove("dragging")
+        document.querySelectorAll(".drag-over").forEach((el) => el.classList.remove("drag-over"))
+        dragInfo = null
+      }
+      function moveUser(id, dir) {
+        state.users = moveItem(state.users, id, dir)
+        renderAll()
+      }
       function removeUser(id) {
         const removed = state.users.find((x) => x.id === id)
         state.users = state.users.filter((x) => x.id !== id)
@@ -840,13 +929,23 @@
         }
         el.innerHTML = state.users
           .map(
-            (u) => `
-    <div class="entity">
+            (u, idx) => `
+    <div class="entity" draggable="true"
+         ondragstart="onDragStart(event,'user',${u.id})"
+         ondragover="onDragOver(event,'user')"
+         ondragleave="onDragLeave(event)"
+         ondrop="onDrop(event,'user',${u.id})"
+         ondragend="onDragEnd(event)">
       <div class="entity-head">
         <div class="name-wrap">
           <input type="text" class="rename-input" value="${escAttr(u.username)}" onchange="renameUser(${u.id}, this.value)">
         </div>
-        <button class="ghost" onclick="removeUser(${u.id})" title="Remove user">✕</button>
+        <div class="entity-actions">
+          <span class="drag-handle" title="Drag to reorder">⠿</span>
+          <button class="ghost tiny" onclick="moveUser(${u.id},-1)" title="Move up" ${idx === 0 ? "disabled" : ""}>▲</button>
+          <button class="ghost tiny" onclick="moveUser(${u.id},1)" title="Move down" ${idx === state.users.length - 1 ? "disabled" : ""}>▼</button>
+          <button class="ghost" onclick="removeUser(${u.id})" title="Remove user">✕</button>
+        </div>
       </div>
       <div class="row">
         <label class="small" style="min-width:70px;">Password</label>
@@ -869,6 +968,10 @@
         }
         state.groups.push({ id: uid(), name, members: [], search: "" })
         n.value = ""
+        renderAll()
+      }
+      function moveGroup(id, dir) {
+        state.groups = moveItem(state.groups, id, dir)
         renderAll()
       }
       function removeGroup(id) {
@@ -945,14 +1048,24 @@
         }
         el.innerHTML = state.groups
           .map(
-            (g) => `
-    <div class="entity">
+            (g, idx) => `
+    <div class="entity" draggable="true"
+         ondragstart="onDragStart(event,'group',${g.id})"
+         ondragover="onDragOver(event,'group')"
+         ondragleave="onDragLeave(event)"
+         ondrop="onDrop(event,'group',${g.id})"
+         ondragend="onDragEnd(event)">
       <div class="entity-head">
         <div class="name-wrap">
           <span style="color:var(--muted)">@</span>
           <input type="text" class="rename-input" value="${escAttr(g.name)}" onchange="renameGroup(${g.id}, this.value)">
         </div>
-        <button class="ghost" onclick="removeGroup(${g.id})" title="Remove group">✕</button>
+        <div class="entity-actions">
+          <span class="drag-handle" title="Drag to reorder">⠿</span>
+          <button class="ghost tiny" onclick="moveGroup(${g.id},-1)" title="Move up" ${idx === 0 ? "disabled" : ""}>▲</button>
+          <button class="ghost tiny" onclick="moveGroup(${g.id},1)" title="Move down" ${idx === state.groups.length - 1 ? "disabled" : ""}>▼</button>
+          <button class="ghost" onclick="removeGroup(${g.id})" title="Remove group">✕</button>
+        </div>
       </div>
       <label class="small">members</label>
       ${
@@ -1002,6 +1115,10 @@
           flags: { e2d: false, e2ds: false, e2dsa: false, e2t: false, e2ts: false, dedup: false },
           extraFlags: "",
         })
+        renderAll()
+      }
+      function moveVolume(id, dir) {
+        state.volumes = moveItem(state.volumes, id, dir)
         renderAll()
       }
       function removeVolume(id) {
@@ -1082,13 +1199,25 @@
           return
         }
         el.innerHTML = state.volumes
-          .map((v) => {
+          .map((v, idx) => {
             const usesPlaceholder = ((v.vpath || "") + (v.realpath || "")).includes("{username}")
             return `
-    <div class="entity">
+    <div class="entity" draggable="true"
+         ondragstart="onDragStart(event,'volume',${v.id})"
+         ondragover="onDragOver(event,'volume')"
+         ondragleave="onDragLeave(event)"
+         ondrop="onDrop(event,'volume',${v.id})"
+         ondragend="onDragEnd(event)">
       <div class="entity-head">
-        <strong style="font-family:var(--mono);font-size:13.5px;">${esc(v.vpath || "/(unset)")}</strong>
-        <button class="ghost" onclick="removeVolume(${v.id})" title="Remove volume">✕</button>
+        <div class="name-wrap">
+          <strong style="font-family:var(--mono);font-size:13.5px;">${esc(v.vpath || "/(unset)")}</strong>
+        </div>
+        <div class="entity-actions">
+          <span class="drag-handle" title="Drag to reorder">⠿</span>
+          <button class="ghost tiny" onclick="moveVolume(${v.id},-1)" title="Move up" ${idx === 0 ? "disabled" : ""}>▲</button>
+          <button class="ghost tiny" onclick="moveVolume(${v.id},1)" title="Move down" ${idx === state.volumes.length - 1 ? "disabled" : ""}>▼</button>
+          <button class="ghost" onclick="removeVolume(${v.id})" title="Remove volume">✕</button>
+        </div>
       </div>
       <div class="field-grid">
         <div>
