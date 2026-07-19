@@ -537,8 +537,8 @@
           <h2>Users</h2>
           <div id="user-list"></div>
           <div class="row">
-            <input type="text" id="new-username" placeholder="username" />
-            <input type="text" id="new-password" placeholder="password" />
+            <input type="text" id="new-username" placeholder="Username" />
+            <input type="text" id="new-password" placeholder="Password" />
             <button class="primary" onclick="addUser()">+ Add user</button>
           </div>
         </section>
@@ -548,7 +548,7 @@
           <h2>Groups</h2>
           <div id="group-list"></div>
           <div class="row">
-            <input type="text" id="new-groupname" placeholder="group name" />
+            <input type="text" id="new-groupname" placeholder="Group name" />
             <button class="primary" onclick="addGroup()">+ Add group</button>
           </div>
         </section>
@@ -723,7 +723,7 @@
       <div style="flex:1;">
         ${
           state.users.length
-            ? `<input type="text" class="member-search" placeholder="search users&hellip;" value="${escAttr(g.shares.search || "")}" ${g.shares.enabled ? "" : "disabled"}
+            ? `<input type="text" class="member-search" placeholder="Search users&hellip;" value="${escAttr(g.shares.search || "")}" ${g.shares.enabled ? "" : "disabled"}
                       oninput="updateShareAdminSearch(this.value)">
                <div class="chips" id="chips-shareadmins">${state.users
                  .map(
@@ -826,7 +826,7 @@
         <button class="ghost" onclick="removeUser(${u.id})" title="Remove user">✕</button>
       </div>
       <div class="row">
-        <label class="small" style="min-width:70px;">password</label>
+        <label class="small" style="min-width:70px;">Password</label>
         <input type="text" value="${escAttr(u.password)}" onchange="updateUser(${u.id},'password',this.value)">
       </div>
     </div>
@@ -934,7 +934,7 @@
       <label class="small">members</label>
       ${
         state.users.length
-          ? `<input type="text" class="member-search" placeholder="search users&hellip;" value="${escAttr(g.search || "")}" oninput="updateGroupSearch(${g.id}, this.value)">
+          ? `<input type="text" class="member-search" placeholder="Search users&hellip;" value="${escAttr(g.search || "")}" oninput="updateGroupSearch(${g.id}, this.value)">
              <div class="chips" id="chips-${g.id}">${state.users
                .map(
                  (u) => `
@@ -1116,7 +1116,7 @@
         ).join("")}
       </div>
       <div class="row" style="margin-top:8px; align-items:flex-start;">
-        <label class="small" style="min-width:110px; margin-top:8px;">other flags</label>
+        <label class="small" style="min-width:110px; margin-top:8px;">Other flags</label>
         <textarea rows="${esc(v.extraFlags).split("\n").length > 2 ? esc(v.extraFlags).split("\n").length : 2}" style="flex:1;" placeholder="e.g. fk:4&#10;noidx:\\.iso$"
                   onchange="updateVolume(${v.id},'extraFlags',this.value)">${esc(v.extraFlags || "")}</textarea>
       </div>
