@@ -410,6 +410,22 @@
         color: #d7f5ef;
         min-height: 200px;
       }
+      .pw-mask {
+        cursor: pointer;
+        border-bottom: 1px dotted var(--muted);
+        border-radius: 3px;
+        padding: 0 2px;
+      }
+      .pw-mask:hover {
+        border-bottom-color: var(--teal);
+      }
+      .pw-mask:focus {
+        outline: 1px solid var(--teal);
+        outline-offset: 1px;
+        border-bottom-style: solid;
+        border-bottom-color: var(--teal);
+        background: rgba(79, 209, 197, 0.08);
+      }
       .out-actions {
         display: flex;
         gap: 8px;
@@ -538,7 +554,7 @@
           <div id="user-list"></div>
           <div class="row">
             <input type="text" id="new-username" placeholder="Username" />
-            <input type="text" id="new-password" placeholder="Password" />
+            <input type="password" id="new-password" placeholder="Password" onfocus="this.type = 'text'" onblur="this.type = 'password'" />
             <button class="primary" onclick="addUser()">+ Add user</button>
           </div>
         </section>
@@ -827,7 +843,7 @@
       </div>
       <div class="row">
         <label class="small" style="min-width:70px;">Password</label>
-        <input type="text" value="${escAttr(u.password)}" onchange="updateUser(${u.id},'password',this.value)">
+        <input type="password" value="${escAttr(u.password)}" onfocus="this.type='text'" onblur="this.type='password'" onchange="updateUser(${u.id},'password',this.value)">
       </div>
     </div>
   `,
@@ -1531,11 +1547,51 @@
         renderUsers()
         renderGroups()
         renderVolumes()
-        document.getElementById("out").textContent = buildConfig()
+        renderOutput()
+      }
+
+      // Builds the on-screen preview with account passwords masked by default.
+      // Copy/Download always pull fresh plaintext straight from buildConfig(),
+      // never from this masked DOM, so the exported config is unaffected.
+      function renderOutput() {
+        const text = buildConfig()
+        const lines = text.split("\n")
+        let inAccounts = false
+        const html = lines
+          .map((line) => {
+            const trimmed = line.trim()
+            if (trimmed === "[accounts]") {
+              inAccounts = true
+              return esc(line)
+            }
+            if (/^\[.*\]$/.test(trimmed)) {
+              inAccounts = false
+              return esc(line)
+            }
+            if (inAccounts && trimmed) {
+              const idx = line.indexOf(":")
+              if (idx > -1) {
+                const prefix = line.slice(0, idx + 1)
+                const pw = line.slice(idx + 1).trim()
+                const dots = "•".repeat(Math.max(pw.length, 6))
+                return `${esc(prefix)} <span class="pw-mask" tabindex="0" data-pw="${escAttr(pw)}" data-dots="${escAttr(dots)}" onfocus="revealPw(this)" onblur="maskPw(this)" title="Click to reveal">${dots}</span>`
+              }
+            }
+            return esc(line)
+          })
+          .join("\n")
+        document.getElementById("out").innerHTML = html
+      }
+
+      function revealPw(el) {
+        el.textContent = el.dataset.pw
+      }
+      function maskPw(el) {
+        el.textContent = el.dataset.dots
       }
 
       function copyOut() {
-        navigator.clipboard.writeText(document.getElementById("out").textContent).then(() => {
+        navigator.clipboard.writeText(buildConfig()).then(() => {
           const b = event.target
           const old = b.textContent
           b.textContent = "Copied!"
@@ -1543,7 +1599,7 @@
         })
       }
       function downloadOut() {
-        const blob = new Blob([document.getElementById("out").textContent], { type: "text/plain" })
+        const blob = new Blob([buildConfig()], { type: "text/plain" })
         const a = document.createElement("a")
         a.href = URL.createObjectURL(blob)
         a.download = "copyparty.conf"
